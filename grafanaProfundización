@@ -1,5 +1,5 @@
 - name: Despliegue automatizado de Grafana
-  hosts: all
+  hosts: grafana
   become: true
 
   tasks:
