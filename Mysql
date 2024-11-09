@@ -1,5 +1,5 @@
 - name: Configuración de MySQL y Zabbix
-  hosts: db
+  hosts: dbmysql
   become: true
 
   tasks:
