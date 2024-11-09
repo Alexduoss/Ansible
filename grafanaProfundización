@@ -1,0 +1,78 @@
+- name: Despliegue automatizado de Grafana
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Preparar entorno
+      block:
+        - name: Instalar paquetes básicos
+          apt:
+            name: 
+              - apt-transport-https
+              - software-properties-common
+              - wget
+            state: present
+
+        - name: Crear directorio de claves si no existe
+          file:
+            path: /etc/apt/keyrings/
+            state: directory
+
+    - name: Configurar repositorio de Grafana
+      block:
+        - name: Descargar clave GPG de Grafana
+          shell: |
+            curl -fsSL https://apt.grafana.com/gpg.key | gpg --dearmor -o /etc/apt/keyrings/grafana.gpg
+
+        - name: Agregar archivo de repositorio
+          copy:
+            dest: /etc/apt/sources.list.d/grafana.list
+            content: |
+              deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main
+
+        - name: Actualizar índice de paquetes
+          apt:
+            update_cache: true
+
+    - name: Instalar y configurar Grafana
+      block:
+        - name: Instalar Grafana
+          apt:
+            name: grafana
+            state: present
+
+        - name: Asegurar que Grafana se inicia al arrancar
+          systemd:
+            name: grafana-server
+            enabled: true
+            state: started
+            daemon_reload: true
+
+    - name: Configurar Grafana para producción
+      block:
+        - name: Cambiar modo de aplicación a producción
+          lineinfile:
+            path: /etc/grafana/grafana.ini
+            regexp: '^;app_mode = production'
+            line: 'app_mode = production'
+
+        - name: Configurar override del servicio
+          block:
+            - name: Crear carpeta de configuración adicional
+              file:
+                path: /etc/systemd/system/grafana-server.service.d
+                state: directory
+
+            - name: Escribir archivo override.conf
+              copy:
+                dest: /etc/systemd/system/grafana-server.service.d/override.conf
+                content: |
+                  [Service]
+                  CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+                  AmbientCapabilities=CAP_NET_BIND_SERVICE
+                  PrivateUsers=false
+
+        - name: Recargar configuración del servicio Grafana
+          systemd:
+            name: grafana-server
+            state: restarted
