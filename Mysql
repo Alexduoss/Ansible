@@ -1,0 +1,33 @@
+- name: Configuración de MySQL y Zabbix
+  hosts: db
+  become: true
+
+  tasks:
+    - name: Asegurarse de que MySQL Server está instalado
+      apt:
+        update_cache: yes
+        name: mysql-server
+        state: latest
+
+    - name: Asegurarse de que Python para MySQL está instalado
+      apt:
+        name: python3-pymysql
+        state: latest
+
+    - name: Habilitar y arrancar el servicio MySQL
+      systemd:
+        name: mysql
+        enabled: true
+        state: started
+
+    - name: Permitir acceso remoto en MySQL
+      blockinfile:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          bind-address = 0.0.0.0
+
+    - name: Reiniciar servicio MySQL para aplicar cambios
+      systemd:
+        name: mysql
+        state: restarted
