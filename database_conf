@@ -1,0 +1,57 @@
+---
+- name: Configurar base de datos MySQL para Zabbix
+  hosts: db
+  become: yes
+  vars:
+    db_name: zabbix
+    db_user: zabbix
+    db_password: alex12345
+    remote_host: 192.168.3.5
+
+  tasks:
+    - name: Preparar entorno MySQL
+      block:
+        - name: Crear base de datos Zabbix
+          mysql_db:
+            name: "{{ db_name }}"
+            state: present
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+
+        - name: Crear usuario con privilegios remotos
+          mysql_user:
+            name: "{{ db_user }}"
+            password: "{{ db_password }}"
+            host: "{{ remote_host }}"
+            priv: "{{ db_name }}.*:ALL"
+            state: present
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+
+      when: db_name is defined and db_user is defined
+
+    - name: Configurar variables MySQL necesarias
+      block:
+        - name: Activar log_bin_trust_function_creators
+          mysql_variables:
+            variable: log_bin_trust_function_creators
+            value: 1
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+
+      when: db_name is defined
+
+    - name: Validación final
+      block:
+        - name: Verificar existencia de la base de datos
+          mysql_db:
+            name: "{{ db_name }}"
+            state: present
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+            check_implicit_admin: yes
+
+        - name: Verificar usuario remoto
+          mysql_user:
+            name: "{{ db_user }}"
+            host: "{{ remote_host }}"
+            state: present
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+
+      when: db_name is defined and db_user is defined
