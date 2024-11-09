@@ -4,7 +4,7 @@
   vars:
     # Database settings
     zabbix_db_config:
-      host: "192.168.30.4"
+      host: "192.168.3.2"
       name: "zabbix"
       user: "root"
       password: "alex12345"
@@ -71,7 +71,7 @@
           slurp:
             src: /usr/share/zabbix-sql-scripts/mysql/server.sql.gz
           register: zabbix_sql_dump
-          delegate_to: 192.168.30.3
+          delegate_to: 192.168.3.3
 
         - name: Upload SQL dump to database host
           copy:
