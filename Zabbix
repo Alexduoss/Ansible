@@ -1,0 +1,116 @@
+- name: Deploy Zabbix 7.0
+  hosts: zabbix
+  become: yes
+  vars:
+    # Database settings
+    zabbix_db_config:
+      host: "192.168.30.4"
+      name: "zabbix"
+      user: "root"
+      password: "alex12345"
+    php_timezone: "America/Bogota"
+
+  tasks:
+    - name: Add Zabbix repository
+      apt:
+        deb: https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-1+ubuntu24.04_all.deb
+
+    - name: Refresh package cache
+      apt:
+        update_cache: yes
+
+    - name: Ensure locales are installed
+      apt:
+        name: locales
+        state: present
+
+    - name: Set default system locale
+      block:
+        - name: Generate en_US.UTF-8 locale
+          command: locale-gen en_US.UTF-8
+
+        - name: Update system locale settings
+          lineinfile:
+            path: /etc/default/locale
+            regexp: '^LANG='
+            line: 'LANG=en_US.UTF-8'
+            create: yes
+
+        - name: Apply locale changes
+          command: update-locale LANG=en_US.UTF-8
+
+    - name: Install Zabbix packages
+      apt:
+        name:
+          - zabbix-server-mysql
+          - zabbix-frontend-php
+          - zabbix-apache-conf
+          - zabbix-sql-scripts
+          - zabbix-agent
+        state: present
+
+    - name: Setup Zabbix server configuration
+      template:
+        src: zabbix_server.conf.j2
+        dest: /etc/zabbix/zabbix_server.conf
+        owner: zabbix
+        group: zabbix
+        mode: '0640'
+      notify: restart zabbix-server
+
+    - name: Update PHP timezone
+      lineinfile:
+        path: /etc/zabbix/apache.conf
+        regexp: '^.*php_value date.timezone.*'
+        line: "        php_value date.timezone {{ php_timezone }}"
+      notify: restart apache2
+
+    - name: Handle initial DB schema
+      block:
+        - name: Retrieve SQL dump
+          slurp:
+            src: /usr/share/zabbix-sql-scripts/mysql/server.sql.gz
+          register: zabbix_sql_dump
+          delegate_to: 192.168.30.3
+
+        - name: Upload SQL dump to database host
+          copy:
+            content: "{{ zabbix_sql_dump['content'] | b64decode }}"
+            dest: /tmp/server.sql.gz
+          delegate_to: "{{ zabbix_db_config.host }}"
+
+        - name: Decompress SQL dump
+          shell: gunzip -f /tmp/server.sql.gz
+          delegate_to: "{{ zabbix_db_config.host }}"
+
+        - name: Import database schema
+          mysql_db:
+            name: "{{ zabbix_db_config.name }}"
+            state: import
+            target: /tmp/server.sql
+            login_user: "{{ zabbix_db_config.user }}"
+            login_password: "{{ zabbix_db_config.password }}"
+            login_host: "{{ zabbix_db_config.host }}"
+          delegate_to: "{{ zabbix_db_config.host }}"
+          run_once: true
+
+    - name: Ensure Zabbix and Apache services are running
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - zabbix-server
+        - zabbix-agent
+        - apache2
+
+  handlers:
+    - name: restart zabbix-server
+      service:
+        name: zabbix-server
+        state: restarted
+
+    - name: restart apache2
+      service:
+        name: apache2
+        state: restarted
