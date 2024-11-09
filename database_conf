@@ -1,12 +1,12 @@
 ---
 - name: Configurar base de datos MySQL para Zabbix
-  hosts: db
+  hosts: dbmysql
   become: yes
   vars:
     db_name: zabbix
     db_user: zabbix
     db_password: alex12345
-    remote_host: 192.168.3.5
+    remote_host: 192.168.3.3
 
   tasks:
     - name: Preparar entorno MySQL
