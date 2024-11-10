@@ -56,7 +56,7 @@
 
     - name: Setup Zabbix server configuration
       template:
-        src: templates/zabbix_server.conf.j2  # Asegúrate de que esta ruta es correcta.
+        src: zabbix_server.conf.j2  # Ruta corregida para que coincida con la estructura esperada.
         dest: /etc/zabbix/zabbix_server.conf
         owner: zabbix
         group: zabbix
