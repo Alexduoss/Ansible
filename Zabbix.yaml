@@ -2,7 +2,6 @@
   hosts: zabbix
   become: yes
   vars:
-    # Database settings
     zabbix_db_config:
       host: "192.168.3.2"
       name: "zabbix"
@@ -36,17 +35,16 @@
       command: locale-gen en_US.UTF-8
       when: "'en_US.UTF-8' not in locale_output.stdout_lines"
 
-    - name: Set default system locale
-      block:
-        - name: Update system locale settings
-          lineinfile:
-            path: /etc/default/locale
-            regexp: '^LANG='
-            line: 'LANG=en_US.UTF-8'
-            create: yes
+    - name: Apply locale changes using localectl
+      command: localectl set-locale LANG=en_US.UTF-8
+      register: set_locale_result
+      failed_when: set_locale_result.rc != 0
 
-        - name: Apply locale changes with valid syntax
-          command: update-locale LANG="en_US.UTF-8"
+    - name: Ensure locale settings are persistent
+      lineinfile:
+        path: /etc/default/locale
+        regexp: '^LANG='
+        line: 'LANG=en_US.UTF-8'
 
     - name: Install Zabbix packages
       apt:
