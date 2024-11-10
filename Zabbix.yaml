@@ -87,26 +87,26 @@
           register: zabbix_sql_dump
           delegate_to: 192.168.3.3
 
-        # - name: Upload SQL dump to database host
-        #   copy:
-        #     content: "{{ zabbix_sql_dump['content'] | b64decode }}"
-        #     dest: /tmp/server.sql.gz
-        #   delegate_to: "{{ zabbix_db_config.host }}"
+        - name: Upload SQL dump to database host
+          copy:
+            content: "{{ zabbix_sql_dump['content'] | b64decode }}"
+            dest: /tmp/server.sql.gz
+          delegate_to: "{{ zabbix_db_config.host }}"
 
-        # - name: Decompress SQL dump
-        #   shell: gunzip -f /tmp/server.sql.gz
-        #   delegate_to: "{{ zabbix_db_config.host }}"
+        - name: Decompress SQL dump
+          shell: gunzip -f /tmp/server.sql.gz
+          delegate_to: "{{ zabbix_db_config.host }}"
 
-        # - name: Import database schema
-        #   mysql_db:
-        #     name: "{{ zabbix_db_config.name }}"
-        #     state: import
-        #     target: /tmp/server.sql
-        #     login_user: "{{ zabbix_db_config.user }}"
-        #     login_password: "{{ zabbix_db_config.password }}"
-        #     login_host: "{{ zabbix_db_config.host }}"
-        #   delegate_to: "{{ zabbix_db_config.host }}"
-        #   run_once: true
+        - name: Import database schema
+          mysql_db:
+            name: "{{ zabbix_db_config.name }}"
+            state: import
+            target: /tmp/server.sql
+            login_user: "{{ zabbix_db_config.user }}"
+            login_password: "{{ zabbix_db_config.password }}"
+            login_host: "{{ zabbix_db_config.host }}"
+          delegate_to: "{{ zabbix_db_config.host }}"
+          run_once: true
 
     - name: Ensure Zabbix and Apache services are running
       service:
