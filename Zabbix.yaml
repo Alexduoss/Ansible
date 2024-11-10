@@ -54,10 +54,19 @@
           - zabbix-agent
         state: present
 
-    - name: Setup Zabbix server configuration
-      template:
-        src: zabbix_server.conf.j2  # Ruta corregida para que coincida con la estructura esperada.
+    - name: Create Zabbix server configuration file dynamically
+      copy:
         dest: /etc/zabbix/zabbix_server.conf
+        content: |
+          # Zabbix server configuration file
+          LogFile=/var/log/zabbix/zabbix_server.log
+          PidFile=/var/run/zabbix/zabbix_server.pid
+          DBHost={{ zabbix_db_config.host }}
+          DBName={{ zabbix_db_config.name }}
+          DBUser={{ zabbix_db_config.user }}
+          DBPassword={{ zabbix_db_config.password }}
+          StartPollers=5
+          Timeout=4
         owner: zabbix
         group: zabbix
         mode: '0640'
