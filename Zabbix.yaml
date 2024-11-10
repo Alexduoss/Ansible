@@ -5,7 +5,7 @@
     zabbix_db_config:
       host: "192.168.3.2"
       name: "zabbix"
-      user: "root"
+      user: "zabbix1"
       password: "alex12345"
     php_timezone: "America/Bogota"
 
