@@ -24,11 +24,20 @@
         name: locales
         state: present
 
+    - name: Verify en_US.UTF-8 locale is available
+      command: locale -a
+      register: locale_output
+
+    - name: Debug locales list
+      debug:
+        msg: "{{ locale_output.stdout_lines }}"
+
+    - name: Generate en_US.UTF-8 locale if not available
+      command: locale-gen en_US.UTF-8
+      when: "'en_US.UTF-8' not in locale_output.stdout_lines"
+
     - name: Set default system locale
       block:
-        - name: Generate en_US.UTF-8 locale
-          command: locale-gen en_US.UTF-8
-
         - name: Update system locale settings
           lineinfile:
             path: /etc/default/locale
@@ -36,8 +45,8 @@
             line: 'LANG=en_US.UTF-8'
             create: yes
 
-        - name: Apply locale changes
-          command: update-locale LANG=en_US.UTF-8
+        - name: Apply locale changes with valid syntax
+          command: update-locale LANG="en_US.UTF-8"
 
     - name: Install Zabbix packages
       apt:
