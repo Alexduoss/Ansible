@@ -37,8 +37,6 @@
 
     - name: Apply locale changes using localectl
       command: localectl set-locale LANG=en_US.UTF-8
-      register: set_locale_result
-      failed_when: set_locale_result.rc != 0
 
     - name: Ensure locale settings are persistent
       lineinfile:
@@ -58,7 +56,7 @@
 
     - name: Setup Zabbix server configuration
       template:
-        src: zabbix_server.conf.j2
+        src: templates/zabbix_server.conf.j2  # Asegúrate de que esta ruta es correcta.
         dest: /etc/zabbix/zabbix_server.conf
         owner: zabbix
         group: zabbix
